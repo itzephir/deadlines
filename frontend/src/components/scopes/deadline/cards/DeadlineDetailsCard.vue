@@ -59,7 +59,7 @@ const state = computed(() => computeDeadlineState(props.deadline));
           <Calendar/>
         </NIcon>
         <span class="flex space-x-1 font-medium">
-          <span>{{ t("scopes.common.due") }}</span>
+          <span>{{ t(deadline.kind === 'ALERT' ? 'scopes.deadline.alert-date' : 'scopes.common.due') }}</span>
           <short-long-time-display
             :time="deadline.due"
             :time-zone="localizationStore.timeZone"
@@ -93,7 +93,7 @@ const state = computed(() => computeDeadlineState(props.deadline));
         </n-collapse-item>
       </n-collapse>
     </div>
-    <div v-if="deadline.permissions.update">
+    <div v-if="deadline.permissions.update && deadline.kind !== 'ALERT'">
       <n-divider/>
       <div class="flex flex-col items-center">
         <DeadlineStatusButton

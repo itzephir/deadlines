@@ -13,6 +13,7 @@ import xyz.om3lette.deadlines_api.data.permissions.dto.ThreadScope
 import xyz.om3lette.deadlines_api.data.scopes.common.dto.UsernameRolePairList
 import xyz.om3lette.deadlines_api.data.scopes.deadline.dto.DeadlineStatsDTO
 import xyz.om3lette.deadlines_api.data.scopes.deadline.model.Deadline
+import xyz.om3lette.deadlines_api.data.scopes.deadline.model.DeadlineKind
 import xyz.om3lette.deadlines_api.data.scopes.deadline.repo.DeadlineRepository
 import xyz.om3lette.deadlines_api.data.scopes.deadline.response.DeadlineCreatedResponse
 import xyz.om3lette.deadlines_api.data.scopes.deadline.response.DeadlineResponseParams
@@ -54,7 +55,8 @@ class DeadlineService(
         title: String,
         description: String?,
         due: Instant,
-        assignees: UsernameRolePairList
+        assignees: UsernameRolePairList,
+        kind: DeadlineKind = DeadlineKind.DEADLINE
     ): DeadlineCreatedResponse {
         val now = Instant.now()
         val minExpirationTime = now.plus(deadlinesProperties.minExpiryMinutes, ChronoUnit.MINUTES)
@@ -83,7 +85,8 @@ class DeadlineService(
                 title = title,
                 description = description,
                 createdAt = creationTimestamp,
-                due = due
+                due = due,
+                kind = kind
             )
         )
 
@@ -302,6 +305,9 @@ class DeadlineService(
         requirePermission(
             permissionService.canUpdate(issuer, DeadlineScope(deadline))
         )
+        if (deadline.kind == DeadlineKind.ALERT && isCompleted == true) {
+            throw StatusCodeException(400, ErrorCode.DDL_ALERT_COMPLETION_NOT_ALLOWED)
+        }
         val wasCompleted = deadline.isCompleted
         val oldDue = deadline.due
 

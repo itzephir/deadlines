@@ -308,6 +308,14 @@
             "minItems" : 0,
             "type" : "array"
           },
+          "kind" : {
+            "default" : "DEADLINE",
+            "enum" : [
+              "DEADLINE",
+              "ALERT"
+            ],
+            "type" : "string"
+          },
           "title" : {
             "maxLength" : 128,
             "minLength" : 2,
@@ -507,6 +515,13 @@
           "isCompleted" : {
             "type" : "boolean"
           },
+          "kind" : {
+            "enum" : [
+              "DEADLINE",
+              "ALERT"
+            ],
+            "type" : "string"
+          },
           "permissions" : {
             "$ref" : "#/components/schemas/DeadlinePermissions"
           },
@@ -543,6 +558,7 @@
           "globalRole",
           "id",
           "isCompleted",
+          "kind",
           "permissions",
           "role",
           "stats",
@@ -1860,6 +1876,7 @@
               "deadline.not-found",
               "deadline.invalid-timestamp",
               "deadline.assignee-limit-exceeded",
+              "deadline.alert-completion-not-allowed",
               "integration.account-not-available",
               "integration.account-not-linked",
               "integration.last-account-unlink-forbidden",

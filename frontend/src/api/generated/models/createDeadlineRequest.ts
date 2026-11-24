@@ -4,6 +4,7 @@
  * OpenAPI definition
  * OpenAPI spec version: v0
  */
+import type { CreateDeadlineRequestKind } from "./createDeadlineRequestKind.ts";
 import type { UsernameRolePair } from "./usernameRolePair.ts";
 
 export interface CreateDeadlineRequest {
@@ -19,6 +20,7 @@ export interface CreateDeadlineRequest {
    * @maxItems 10
    */
   invitations: UsernameRolePair[];
+  kind?: CreateDeadlineRequestKind;
   /**
    * @minLength 2
    * @maxLength 128

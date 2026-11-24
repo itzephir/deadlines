@@ -1,11 +1,13 @@
 package xyz.om3lette.deadlines_api.data.scopes.deadline.requests
 
 import jakarta.validation.Valid
+import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 import xyz.om3lette.deadlines_api.data.scopes.common.constraints.ScopeInvitationConstraints
 import xyz.om3lette.deadlines_api.data.scopes.common.dto.UsernameRolePair
 import xyz.om3lette.deadlines_api.data.scopes.common.constraints.ScopeTextConstraints
+import xyz.om3lette.deadlines_api.data.scopes.deadline.model.DeadlineKind
 import java.time.Instant
 
 data class CreateDeadlineRequest(
@@ -19,5 +21,8 @@ data class CreateDeadlineRequest(
     val due: Instant,
 
     @field:Size(max = ScopeInvitationConstraints.MAX_INVITATIONS)
-    val invitations: List<@Valid UsernameRolePair>
+    val invitations: List<@Valid UsernameRolePair>,
+
+    @get:Schema(defaultValue = "DEADLINE", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    val kind: DeadlineKind = DeadlineKind.DEADLINE
 )

@@ -51,6 +51,9 @@ class OpenApiExportTest {
 
         val document = JsonMapper.builder().build().readTree(response)
         val schemas = document.path("components").path("schemas")
+        val createDeadline = schemas.path("CreateDeadlineRequest")
+        assertFalse(createDeadline.path("required").any { it.asString() == "kind" })
+        assertEquals("DEADLINE", createDeadline.path("properties").path("kind").path("default").asString())
 
         val nullableResponseFields = mapOf(
             "OrganizationDTO" to listOf("description"),

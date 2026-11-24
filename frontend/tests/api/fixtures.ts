@@ -42,6 +42,7 @@ export function deadline(fields: Partial<DeadlineResponseWithRole> = {}): Deadli
   return {
     id: 3,
     title: "Deadline",
+    kind: "DEADLINE",
     description: null,
     threadId: 2,
     createdAt: instant,

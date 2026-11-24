@@ -18,7 +18,7 @@ import { useRequestError } from "@/composables/shared/useRequestError";
 import { useThread } from "@/composables/threads/useThreads";
 import { MIN_DEADLINE_DURATION_MS } from "@/constants/forms";
 import { MINUTE_MS } from "@/constants/time";
-import { tEntityActionConfirmation, tEntityToastAction, tFormError } from "@/locales/utils";
+import { tFormError } from "@/locales/utils";
 import emitter from "@/plugins/emitter";
 import { useCurrentScopeStore } from "@/stores/CurrentScopeStore";
 import { useLocalizationStore } from "@/stores/LocalizationStore";
@@ -36,11 +36,13 @@ const localizationStore = useLocalizationStore();
 
 const detail = useDeadline(() => props.entity.id);
 const deadline = computed(() => detail.deadline.value ?? props.entity);
+const entityName = computed(() => t(`scopes.deadline.kind.${deadline.value.kind}`));
 const mutations = useDeadlineMutations(() => props.entity.threadId);
 
 const patchFormRef = ref<FormInst | null>(null);
 const { patchFormModel, patchFormRules, handlePatch } = useEntityEdit({
   scopeType: "deadline",
+  entityName,
   formRef: patchFormRef,
   initialFormModel: {
     title: props.entity.title,
@@ -64,6 +66,7 @@ const { patchFormModel, patchFormRules, handlePatch } = useEntityEdit({
     deadlineId: props.entity.id,
     patchDeadlineRequest: toPatchDeadlineRequest({
       ...model,
+      isCompleted: deadline.value.kind === "ALERT" ? undefined : model.isCompleted,
       due: model.due === deadline.value.due ? undefined : model.due,
     }),
   }),
@@ -80,7 +83,7 @@ const handleDelete = async () => {
   try {
     await mutations.remove.mutateAsync({ deadlineId: props.entity.id });
     emitter.emit("closeEditEntityDialog");
-    message.success(tEntityToastAction(t, "deadline", "deleted"));
+    message.success(t("scopes.toasts.entity-deleted", { entity: entityName.value }));
 
     if (wasSelected && router.currentRoute.value.fullPath === path) {
       await router.push({ path: "/deadlines", query: { thrId: props.entity.threadId } });
@@ -184,7 +187,7 @@ const handleInvitationSubmission = () => {
           />
         </n-form-item>
         <div class="flex-col sm:flex justify-around sm:gap-4">
-          <n-form-item class="flex-2" :label="t('scopes.common.form-labels.due-date')" path="due">
+          <n-form-item class="flex-2" :label="t(deadline.kind === 'ALERT' ? 'scopes.deadline.alert-date' : 'scopes.common.form-labels.due-date')" path="due">
             <deadline-date-picker
               v-model:value="patchFormModel.due"
               :disabled="!deadline.permissions.update"
@@ -192,6 +195,7 @@ const handleInvitationSubmission = () => {
             />
           </n-form-item>
           <n-form-item
+            v-if="deadline.kind !== 'ALERT'"
             :label="t('scopes.common.form-labels.is-completed')"
             path="isCompleted"
             class="flex-1"
@@ -224,7 +228,7 @@ const handleInvitationSubmission = () => {
                 {{ t("actions.delete") }}
               </n-button>
             </template>
-            {{ tEntityActionConfirmation(t, "deadline", "delete") }}
+            {{ t('actions.confirmation', { action: t('actions.to-confirm.delete-entity', { entity: entityName }) }) }}
           </n-popconfirm>
           <div></div>
           <n-button role="button" :disabled="!deadline.permissions.update" :loading="mutations.patch.isLoading.value" @click="handlePatch" class="rounded-lg!" type="info">

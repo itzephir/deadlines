@@ -49,9 +49,13 @@ data class Deadline(
     @OnDelete(action = OnDeleteAction.CASCADE)
     val notifications: MutableList<DeadlineNotification> = mutableListOf(),
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16)
+    val kind: DeadlineKind = DeadlineKind.DEADLINE,
+
 ) {
     fun toDTO() = DeadlineDTO(
-        id, title, description, createdAt, due, isCompleted, thread.id
+        id, title, description, createdAt, due, isCompleted, thread.id, kind
     )
 
     fun toResponse(stats: DeadlineStatsDTO, permissions: DeadlinePermissions) = DeadlineResponse(

@@ -60,7 +60,8 @@ class DeadlineNotificationCustomRepositoryImpl(
                         'deadline', jsonb_build_object(
                             'id', r.deadline_id,
                             'title', deadline_title,
-                            'due', due
+                            'due', due,
+                            'kind', kind
                         )
                     )
                 FROM due m

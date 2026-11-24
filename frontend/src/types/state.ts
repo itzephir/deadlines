@@ -1,1 +1,1 @@
-export type DeadlineState = "open" | "overdue" | "completed";
+export type DeadlineState = "open" | "overdue" | "completed" | "upcoming" | "occurred";

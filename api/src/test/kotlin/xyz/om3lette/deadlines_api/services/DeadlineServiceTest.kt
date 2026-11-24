@@ -25,6 +25,8 @@ import xyz.om3lette.deadlines_api.data.permissions.dto.ThreadScope
 import xyz.om3lette.deadlines_api.data.scopes.deadline.dto.DeadlinePermissions
 import xyz.om3lette.deadlines_api.data.scopes.deadline.dto.DeadlineStatsDTO
 import xyz.om3lette.deadlines_api.data.scopes.deadline.model.Deadline
+import xyz.om3lette.deadlines_api.data.scopes.deadline.model.DeadlineKind
+import xyz.om3lette.deadlines_api.data.scopes.common.dto.UsernameRolePairList
 import xyz.om3lette.deadlines_api.data.scopes.deadline.repo.DeadlineRepository
 import xyz.om3lette.deadlines_api.data.scopes.organization.model.Organization
 import xyz.om3lette.deadlines_api.data.scopes.thread.model.Thread
@@ -86,6 +88,39 @@ class DeadlineServiceTest {
         )
 
         every { deadlineRepository.findById(deadline.id) } returns Optional.of(deadline)
+    }
+
+    @Nested
+    inner class CreateEntry {
+        private val saved = slot<Deadline>()
+
+        @BeforeEach
+        fun stubs() {
+            every { threadRepository.findById(thread.id) } returns Optional.of(thread)
+            every { permissionService.canCreateDeadline(issuer, thread) } returns true
+            every { deadlineRepository.save(capture(saved)) } answers { firstArg<Deadline>().copy(id = 100) }
+            every { userScopeRepository.findByScopeTypeScopeIdInAndUsernameInIgnoreCase(any(), any(), any()) } returns emptyList()
+            every { userScopeRepository.saveAll(any<List<UserScope>>()) } answers { firstArg() }
+            every { deadlineNotificationPlannerService.createNotifications(any(), any()) } just Runs
+            every { permissionService.getMaxRole(any()) } returns ScopeRole.ORG_OWNER
+        }
+
+        @Test
+        fun `new alerts are persisted and receive reminders`() {
+            val due = Instant.now().plusSeconds(86400)
+            deadlineService.createDeadline(issuer, thread.id, "Release day", null, due, UsernameRolePairList(emptyList()), DeadlineKind.ALERT)
+
+            assertEquals(DeadlineKind.ALERT, saved.captured.kind)
+            assertEquals(false, saved.captured.isCompleted)
+            verify { deadlineNotificationPlannerService.createNotifications(match { it.kind == DeadlineKind.ALERT && it.due == due }, any()) }
+        }
+
+        @Test
+        fun `creation defaults to deadline for existing clients`() {
+            deadlineService.createDeadline(issuer, thread.id, "Task", null, Instant.now().plusSeconds(86400), UsernameRolePairList(emptyList()))
+
+            assertEquals(DeadlineKind.DEADLINE, saved.captured.kind)
+        }
     }
 
     @Nested
@@ -271,11 +306,42 @@ class DeadlineServiceTest {
     inner class PatchDeadline {
         @BeforeEach
         fun commonHappyStubs() {
-            every { permissionService.canUpdate(issuer, deadlineScope()) } returns true
-            every { deadlineRepository.save(deadline) } returns deadline
-            every { deadlineNotificationPlannerService.deleteNotifications(deadline) } just Runs
-            every { deadlineNotificationPlannerService.reconcileNotifications(deadline, any()) } just Runs
+            every { permissionService.canUpdate(issuer, any()) } returns true
+            every { deadlineRepository.save(any()) } returnsArgument 0
+            every { deadlineNotificationPlannerService.deleteNotifications(any()) } just Runs
+            every { deadlineNotificationPlannerService.reconcileNotifications(any(), any()) } just Runs
             every { notificationService.notifyDeadlineDueChanged(deadline.id, any(), any()) } just Runs
+        }
+
+        @Test
+        fun `alerts cannot be completed and reminders are preserved`() {
+            deadline = deadline.copy(kind = DeadlineKind.ALERT)
+            every { deadlineRepository.findById(deadline.id) } returns Optional.of(deadline)
+
+            val error = assertThrows<StatusCodeException> {
+                deadlineService.patchDeadline(issuer, deadline.id, null, null, true, null)
+            }
+
+            assertEquals(400, error.statusCode)
+            assertEquals(ErrorCode.DDL_ALERT_COMPLETION_NOT_ALLOWED, error.code)
+            assertEquals(false, deadline.isCompleted)
+            verify(exactly = 0) { deadlineNotificationPlannerService.deleteNotifications(any()) }
+            verify(exactly = 0) { deadlineRepository.save(any()) }
+        }
+
+        @Test
+        fun `moving an alert reschedules reminders and announces the new date`() {
+            deadline = deadline.copy(kind = DeadlineKind.ALERT)
+            every { deadlineRepository.findById(deadline.id) } returns Optional.of(deadline)
+            val oldDue = deadline.due
+            val newDue = Instant.now().plusSeconds(86400)
+
+            deadlineService.patchDeadline(issuer, deadline.id, null, null, null, newDue)
+
+            assertEquals(newDue, deadline.due)
+            assertEquals(false, deadline.isCompleted)
+            verify { deadlineNotificationPlannerService.reconcileNotifications(deadline, any()) }
+            verify { notificationService.notifyDeadlineDueChanged(deadline.id, oldDue, newDue) }
         }
 
         @Test

@@ -47,6 +47,7 @@ class ThreadDeadlineController(
         request.title,
         request.description,
         request.due,
-        UsernameRolePairList(request.invitations)
+        UsernameRolePairList(request.invitations),
+        request.kind
     )
 }

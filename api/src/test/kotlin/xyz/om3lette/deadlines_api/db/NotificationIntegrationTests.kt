@@ -20,6 +20,8 @@ import xyz.om3lette.deadlines_api.data.notifications.event.DeadlineNotificationE
 import xyz.om3lette.deadlines_api.data.notifications.event.NotificationEvent
 import xyz.om3lette.deadlines_api.data.outbox.repo.OutboxRepository
 import xyz.om3lette.deadlines_api.data.scopes.deadline.model.Deadline
+import xyz.om3lette.deadlines_api.data.scopes.deadline.model.DeadlineKind
+import xyz.om3lette.deadlines_api.data.scopes.thread.repo.ThreadRepository
 import xyz.om3lette.deadlines_api.data.scopes.userScope.enums.ScopeRole
 import xyz.om3lette.deadlines_api.data.scopes.userScope.enums.ScopeType
 import xyz.om3lette.deadlines_api.data.user.model.User
@@ -50,6 +52,7 @@ class NotificationIntegrationTests {
     @Autowired private lateinit var outboxRepository: OutboxRepository
     @Autowired private lateinit var deadlineService: DeadlineService
     @Autowired private lateinit var transactionManager: PlatformTransactionManager
+    @Autowired private lateinit var threadRepository: ThreadRepository
 
     private val mapper = JsonMapper.builder().build()
     private val organizationId = 8_100L
@@ -118,6 +121,42 @@ class NotificationIntegrationTests {
         String::class.java,
         reminderId
     )
+
+    @Test
+    @Transactional
+    fun `alerts retain their kind in reminder and date change payloads`() {
+        fixtures()
+        jdbc.update("UPDATE deadlines SET kind = 'ALERT' WHERE id = ?", deadlineId)
+        insertReminder()
+
+        notificationService.enqueueScheduledReminders(batchSize)
+        notificationService.notifyDeadlineDueChanged(deadlineId, Instant.EPOCH, Instant.now())
+
+        val events = payloads()
+        assertEquals(recipientChats.size * 2, events.size)
+        events.forEach {
+            val kind = when (it) {
+                is DeadlineNotificationEvent -> it.deadline.kind
+                is DeadlineDueChangedNotificationEvent -> it.deadline.kind
+            }
+            assertEquals(DeadlineKind.ALERT, kind)
+        }
+    }
+
+    @Test
+    @Transactional
+    fun `alerts are excluded from deadline completion statistics`() {
+        fixtures()
+        jdbc.update("UPDATE deadlines SET is_completed = true WHERE id = ?", deadlineId)
+        insertDeadline(jdbc, deadlineId + 1, threadId)
+        insertDeadline(jdbc, deadlineId + 2, threadId)
+        jdbc.update("UPDATE deadlines SET kind = 'ALERT' WHERE id = ?", deadlineId + 2)
+
+        val stats = threadRepository.getThreadStats(listOf(threadId)).single()
+        assertEquals(2L, stats.deadlines)
+        assertEquals(1L, stats.completedDeadlines)
+        assertEquals("DEADLINE", jdbc.queryForObject("SELECT kind FROM deadlines WHERE id = ?", String::class.java, deadlineId))
+    }
 
     @Test
     @Transactional

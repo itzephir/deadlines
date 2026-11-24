@@ -30,8 +30,11 @@ def _format_due(value: datetime, time_zone: str) -> str:
 
 
 def render_notification(event: Notification, translator: Translator) -> str:
+    is_alert = event.deadline.kind == "ALERT"
     header = translator.translate(
-        TranslationKey.NOTIFICATIONS_DEADLINE_HEADER,
+        TranslationKey.NOTIFICATIONS_ALERT_HEADER
+        if is_alert
+        else TranslationKey.NOTIFICATIONS_DEADLINE_HEADER,
         event.language,
         title=event.deadline.title,
         organization=event.organization.title,
@@ -39,16 +42,26 @@ def render_notification(event: Notification, translator: Translator) -> str:
     )
     if isinstance(event, DeadlineDueChangedNotificationEvent):
         body = translator.translate(
-            TranslationKey.NOTIFICATIONS_DEADLINE_DUE_CHANGED,
+            TranslationKey.NOTIFICATIONS_ALERT_DATE_CHANGED
+            if is_alert
+            else TranslationKey.NOTIFICATIONS_DEADLINE_DUE_CHANGED,
             event.language,
             old_due=_format_due(event.old_due, event.time_zone),
             new_due=_format_due(event.new_due, event.time_zone),
         )
     else:
-        translation_key = TranslationKey.NOTIFICATIONS_DEADLINE_OVERDUE
+        translation_key = (
+            TranslationKey.NOTIFICATIONS_ALERT_OCCURRED
+            if is_alert
+            else TranslationKey.NOTIFICATIONS_DEADLINE_OVERDUE
+        )
         params = {"due": _format_due(event.deadline.due, event.time_zone)}
         if event.time_remaining is not TimeRemaining.NO_TIME:
-            translation_key = TranslationKey.NOTIFICATIONS_DEADLINE_EXPIRY
+            translation_key = (
+                TranslationKey.NOTIFICATIONS_ALERT_UPCOMING
+                if is_alert
+                else TranslationKey.NOTIFICATIONS_DEADLINE_EXPIRY
+            )
             params["time_remaining"] = translator.translate(
                 TIME_REMAINING_TRANSLATION_KEYS[event.time_remaining], event.language
             )

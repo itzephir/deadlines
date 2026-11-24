@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from common.application.enums import Language
 from common.infrastructure.kafka.schemas.base_kafka_event import BaseKafkaEvent
@@ -13,6 +14,7 @@ class DeadlinePayload(BaseKafkaEvent):
     id: int
     title: str
     due: datetime
+    kind: Literal["DEADLINE", "ALERT"] = "DEADLINE"
 
 
 class BaseNotificationEvent(BaseKafkaEvent):

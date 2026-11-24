@@ -2,12 +2,14 @@ package xyz.om3lette.deadlines_api.data.notifications.event
 
 import xyz.om3lette.deadlines_api.data.integration.bot.enums.Language
 import xyz.om3lette.deadlines_api.data.notifications.enums.TimeRemaining
+import xyz.om3lette.deadlines_api.data.scopes.deadline.model.DeadlineKind
 import java.time.Instant
 
 data class RawDeadline(
     val id: Long,
     val due: Instant,
-    val title: String
+    val title: String,
+    val kind: DeadlineKind = DeadlineKind.DEADLINE
 )
 
 data class RawOrganization(

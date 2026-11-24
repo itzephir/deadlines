@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CircleAlert, CircleCheck, CircleDot, Paperclip } from '@lucide/vue';
+import { Bell, CircleAlert, CircleCheck, CircleDot, Paperclip } from '@lucide/vue';
 import { computed } from 'vue';
 import type { DeadlineModel } from '@/api/adapters/deadline';
 import { computeDeadlineState } from '@/utils/state';
@@ -26,7 +26,8 @@ const state = computed(() => computeDeadlineState(props.deadline))
   <div
     class="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2 gap-y-1 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-y-0"
   >
-    <CircleDot v-if="state === 'open'" class="shrink-0 text-status-success/75" :size="iconSize" />
+    <Bell v-if="deadline.kind === 'ALERT'" class="shrink-0 text-status-info/75" :size="iconSize" />
+    <CircleDot v-else-if="state === 'open'" class="shrink-0 text-status-success/75" :size="iconSize" />
     <CircleAlert v-else-if="state === 'overdue'" class="shrink-0 text-status-error/80" :size="iconSize" />
     <CircleCheck v-else class="shrink-0 text-status-info/75" :size="iconSize" />
 

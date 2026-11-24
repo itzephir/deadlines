@@ -3,9 +3,10 @@ import type { CreateDeadlineRequest, DeadlineResponseWithRole, PatchDeadlineRequ
 import { normalizeInvitations, toTimestamp } from "./common";
 
 export function toDeadline(dto: DeadlineResponseWithRole) {
-  const { createdAt, due, description, role, globalRole, ...rest } = dto;
+  const { createdAt, due, description, role, globalRole, kind = "DEADLINE", ...rest } = dto;
   return {
     ...rest,
+    kind,
     createdAt: toTimestamp(createdAt),
     due: toTimestamp(due),
     description: description ?? null,

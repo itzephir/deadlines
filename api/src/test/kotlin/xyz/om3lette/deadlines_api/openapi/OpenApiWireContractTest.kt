@@ -20,6 +20,10 @@ import xyz.om3lette.deadlines_api.config.TestInfraMocks
 import xyz.om3lette.deadlines_api.data.attachments.reponse.AttachmentCreatedResponse
 import xyz.om3lette.deadlines_api.data.scopes.deadline.dto.DeadlineDTO
 import xyz.om3lette.deadlines_api.data.scopes.deadline.dto.DeadlinePermissions
+import xyz.om3lette.deadlines_api.data.scopes.deadline.model.DeadlineKind
+import xyz.om3lette.deadlines_api.data.scopes.common.dto.UsernameRolePairList
+import xyz.om3lette.deadlines_api.data.scopes.deadline.response.DeadlineCreatedResponse
+import xyz.om3lette.deadlines_api.data.scopes.userScope.enums.ScopeRole
 import xyz.om3lette.deadlines_api.data.scopes.deadline.response.DeadlineResponse
 import xyz.om3lette.deadlines_api.data.scopes.deadline.response.DeadlineStatsResponse
 import xyz.om3lette.deadlines_api.data.user.model.User
@@ -71,7 +75,7 @@ class OpenApiWireContractTest {
     fun `live JSON serialization agrees with the documented Kotlin property names`() {
         Mockito.`when`(deadlines.getDeadline(any(User::class.java), anyLong())).thenReturn(
             DeadlineResponse(
-                DeadlineDTO(42, "Deadline", null, Instant.EPOCH, Instant.EPOCH, true, 3),
+                DeadlineDTO(42, "Deadline", null, Instant.EPOCH, Instant.EPOCH, true, 3, DeadlineKind.DEADLINE),
                 DeadlineStatsResponse(0, 0), DeadlinePermissions(false, false, false, false)
             ).withRole(null, null)
         )
@@ -80,6 +84,7 @@ class OpenApiWireContractTest {
         assertTrue(response.headers().firstValue("content-type").orElse("").startsWith("application/json"))
         val body = mapper.readTree(response.body())
         assertTrue(body.path("isCompleted").asBoolean())
+        assertEquals("DEADLINE", body.path("kind").asString())
         assertFalse(body.has("completed"))
         listOf("description", "role", "globalRole").forEach { field ->
             assertTrue(body.path(field).isNull, "$field must be present with a null value")
@@ -98,6 +103,28 @@ class OpenApiWireContractTest {
         val properties = docs.path("components").path("schemas").path("DeadlineResponseWithRole").path("properties")
         assertTrue(properties.has("isCompleted"))
         assertFalse(properties.has("completed"))
+    }
+
+    @Test
+    fun `creation accepts alerts and defaults omitted kind for existing clients`() {
+        val kinds = mutableListOf<DeadlineKind>()
+        Mockito.doAnswer { invocation ->
+            kinds.add(invocation.getArgument(6))
+            DeadlineCreatedResponse(42, 0, ScopeRole.ORG_OWNER)
+        }.`when`(deadlines).createDeadline(
+            any(User::class.java) ?: user, anyLong(), any(String::class.java) ?: "",
+            Mockito.isNull(), any(Instant::class.java) ?: Instant.EPOCH,
+            any(UsernameRolePairList::class.java) ?: UsernameRolePairList(emptyList()),
+            any(DeadlineKind::class.java) ?: DeadlineKind.DEADLINE
+        )
+        val fields = """"title":"Event","due":"2026-12-01T12:00:00Z","invitations":[]"""
+        listOf("{$fields}", "{$fields,\"kind\":\"ALERT\"}").forEach { body ->
+            val response = send("/api/threads/3/deadlines", "POST", "application/json", body.toByteArray())
+            assertEquals(200, response.statusCode(), response.body())
+            assertEquals(42, mapper.readTree(response.body()).path("deadlineId").asInt())
+        }
+        assertEquals(listOf(DeadlineKind.DEADLINE, DeadlineKind.ALERT), kinds)
+        assertEquals(422, send("/api/threads/3/deadlines", "POST", "application/json", "{$fields,\"kind\":\"UNKNOWN\"}".toByteArray()).statusCode())
     }
 
     @Test

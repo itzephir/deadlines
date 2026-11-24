@@ -6,6 +6,7 @@
  */
 import type { DeadlinePermissions } from "./deadlinePermissions.ts";
 import type { DeadlineResponseWithRoleGlobalRole } from "./deadlineResponseWithRoleGlobalRole.ts";
+import type { DeadlineResponseWithRoleKind } from "./deadlineResponseWithRoleKind.ts";
 import type { DeadlineResponseWithRoleRole } from "./deadlineResponseWithRoleRole.ts";
 import type { DeadlineStatsResponse } from "./deadlineStatsResponse.ts";
 
@@ -18,6 +19,7 @@ export interface DeadlineResponseWithRole {
   globalRole: DeadlineResponseWithRoleGlobalRole;
   id: number;
   isCompleted: boolean;
+  kind: DeadlineResponseWithRoleKind;
   permissions: DeadlinePermissions;
   /** @nullable */
   role: DeadlineResponseWithRoleRole;

@@ -8,6 +8,8 @@ const tagType: Record<DeadlineState, "info" | "error" | "default"> = {
   open: "default",
   overdue: "error",
   completed: "info",
+  upcoming: "info",
+  occurred: "default",
 };
 defineProps<{
   state: DeadlineState
