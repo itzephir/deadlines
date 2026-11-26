@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { toCreateDeadlineRequest, toDeadline } from "@/api/adapters/deadline";
-import { computeDeadlineState } from "@/utils/state";
+import { toCreateEventRequest, toEvent } from "@/api/adapters/event";
+import { EVENT_PRESENTATIONS } from "@/domain/events";
+import { computeEventState } from "@/utils/state";
 import { deadline } from "./fixtures";
 
 describe("important dates", () => {
@@ -14,21 +15,31 @@ describe("important dates", () => {
 
   test("alerts become occurred when their date arrives", () => {
     const alert = { kind: "ALERT", due: now + 1, isCompleted: false } as const;
-    expect(computeDeadlineState(alert)).toBe("upcoming");
+    expect(computeEventState(alert)).toBe("upcoming");
     vi.setSystemTime(now + 1);
-    expect(computeDeadlineState(alert)).toBe("occurred");
+    expect(computeEventState(alert)).toBe("occurred");
   });
 
   test("past alerts never become overdue or completed", () => {
-    expect(computeDeadlineState({ kind: "ALERT", due: now - 1, isCompleted: true })).toBe("occurred");
-    expect(computeDeadlineState({ kind: "DEADLINE", due: now - 1, isCompleted: false })).toBe("overdue");
-    expect(computeDeadlineState({ kind: "DEADLINE", due: now - 1, isCompleted: true })).toBe("completed");
+    expect(computeEventState({ kind: "ALERT", due: now - 1, isCompleted: true })).toBe("occurred");
+    expect(computeEventState({ kind: "DEADLINE", due: now - 1, isCompleted: false })).toBe("overdue");
+    expect(computeEventState({ kind: "DEADLINE", due: now - 1, isCompleted: true })).toBe("completed");
   });
 
   test("alert kind survives API serialization and normalization", () => {
-    const request = toCreateDeadlineRequest({ kind: "ALERT", title: "Release", due: now, invitations: [] });
+    const request = toCreateEventRequest({ kind: "ALERT", title: "Release", due: now, invitations: [] });
     expect(request.kind).toBe("ALERT");
     expect(request.due).toBe("2026-11-24T12:00:00Z");
-    expect(toDeadline(deadline({ kind: "ALERT" })).kind).toBe("ALERT");
+    expect(toEvent(deadline({ kind: "ALERT" })).kind).toBe("ALERT");
+  });
+
+  test("event policies control labels and completion consistently", () => {
+    const alert = EVENT_PRESENTATIONS.ALERT;
+    expect(alert.dateLabelKey).toBe(alert.dueLabelKey);
+    expect(alert.supportsCompletion).toBe(false);
+    expect(alert.completionPatch(true)).toBeUndefined();
+    expect(EVENT_PRESENTATIONS.DEADLINE.supportsCompletion).toBe(true);
+    expect(EVENT_PRESENTATIONS.DEADLINE.completionPatch(true)).toBe(true);
+    expect(EVENT_PRESENTATIONS.DEADLINE.completionPatch(false)).toBe(false);
   });
 });

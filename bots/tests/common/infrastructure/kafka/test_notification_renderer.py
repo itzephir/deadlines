@@ -5,6 +5,10 @@ from pydantic import TypeAdapter
 
 from common.application.enums import Language
 from common.infrastructure.i18n.translator import I18nTranslator
+from common.infrastructure.kafka.enums.event_kind import EventKind
+from common.infrastructure.kafka.notification_presentation import (
+    NOTIFICATION_PRESENTATIONS,
+)
 from common.infrastructure.kafka.notification_renderer import render_notification
 from common.infrastructure.kafka.schemas.notification_event import Notification
 
@@ -91,10 +95,24 @@ def test_old_messages_default_to_deadline(translator):
     del value["type"]
     event = ADAPTER.validate_python(value)
 
-    assert event.deadline.kind == "DEADLINE"
+    assert event.event.kind == "DEADLINE"
     assert "Срок выполнения истёк" in render_notification(event, translator)
 
 
 def test_unknown_kind_is_rejected():
     with pytest.raises(ValueError):
         ADAPTER.validate_python(payload(kind="UNKNOWN"))
+
+
+def test_all_event_kinds_have_notification_presentations():
+    assert set(NOTIFICATION_PRESENTATIONS) == set(EventKind)
+
+
+@pytest.mark.parametrize("kind", list(EventKind))
+def test_generic_event_model_preserves_the_published_kafka_field(kind):
+    event = ADAPTER.validate_python(payload(kind=kind))
+    wire = event.model_dump(mode="json", by_alias=True)
+
+    assert event.event.kind is kind
+    assert wire["deadline"]["kind"] == kind.value
+    assert "event" not in wire

@@ -4,7 +4,7 @@ import { type FormInst, type FormRules, NButton, NForm, NFormItem, NIcon, NInput
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
-import { toCreateDeadlineRequest } from "@/api/adapters/deadline";
+import { toCreateEventRequest } from "@/api/adapters/event";
 import EntityCreationDialogLayout from "@/components/home/common/dialogs/EntityCreationDialogLayout.vue";
 import DynamicUserInvitationInput from "@/components/home/common/forms/DynamicUserInvitationInput.vue";
 import Step from "@/components/home/common/stepper/Step.vue";
@@ -13,6 +13,7 @@ import { useEntityCreate } from "@/composables/shared/useEntityCreate";
 import { DEFAULT_DEADLINE_INVITATION_ROLE } from "@/constants/defaults";
 import { MIN_DEADLINE_DURATION_MS } from "@/constants/forms";
 import { HOUR_MS, MINUTE_MS } from "@/constants/time";
+import { EVENT_PRESENTATIONS, type EventKind } from "@/domain/events";
 import { tFormError } from "@/locales/utils";
 import emitter from "@/plugins/emitter";
 import { useCurrentScopeStore } from "@/stores/CurrentScopeStore";
@@ -30,8 +31,8 @@ if (!thrId) {
   emitter.emit("closeCreateEntityDialog");
 }
 
-type DeadlineFormModel = {
-  kind: "DEADLINE" | "ALERT";
+type EventFormModel = {
+  kind: EventKind;
   title: string;
   description: string;
   due: number | null;
@@ -50,7 +51,7 @@ const extraFormRules: FormRules = {
 };
 
 const { create } = useDeadlineMutations(thrId);
-const { formModel, formRules, invitationFormModel, validateFormData, handleCreation } = useEntityCreate<DeadlineFormModel>({
+const { formModel, formRules, invitationFormModel, validateFormData, handleCreation } = useEntityCreate<EventFormModel>({
   scopeType: "deadline",
   formRef,
   initialFormModel: { kind: "DEADLINE", title: "", description: "", due: Math.ceil((Date.now() + HOUR_MS) / MINUTE_MS) * MINUTE_MS },
@@ -61,12 +62,13 @@ const { formModel, formRules, invitationFormModel, validateFormData, handleCreat
 
     return create.mutateAsync({
       threadId: thrId,
-      createDeadlineRequest: toCreateDeadlineRequest({ ...model, due: model.due, invitations }),
+      createEventRequest: toCreateEventRequest({ ...model, due: model.due, invitations }),
     });
   },
-  entityName: (): string => t(`scopes.deadline.kind.${formModel.value.kind}`),
+  entityName: (): string => t(EVENT_PRESENTATIONS[formModel.value.kind].nameKey),
 });
-const entityName = computed(() => t(`scopes.deadline.kind.${formModel.value.kind}`));
+const presentation = computed(() => EVENT_PRESENTATIONS[formModel.value.kind]);
+const entityName = computed(() => t(presentation.value.nameKey));
 </script>
 
 <template>
@@ -83,7 +85,7 @@ const entityName = computed(() => t(`scopes.deadline.kind.${formModel.value.kind
                 <n-radio-button value="DEADLINE">{{ t('scopes.deadline.kind.DEADLINE') }}</n-radio-button>
                 <n-radio-button value="ALERT">{{ t('scopes.deadline.kind.ALERT') }}</n-radio-button>
               </n-radio-group>
-              <p class="description mt-2">{{ t(`scopes.deadline.kind-description.${formModel.kind}`) }}</p>
+              <p class="description mt-2">{{ t(presentation.descriptionKey) }}</p>
             </div>
           </n-form-item>
           <n-form-item :label="t('scopes.common.form-labels.title')" path="title">
@@ -93,7 +95,7 @@ const entityName = computed(() => t(`scopes.deadline.kind.${formModel.value.kind
             <n-input v-model:value="formModel.description" type="textarea" />
           </n-form-item>
           <div class="flex justify-center">
-            <n-form-item :label="t(formModel.kind === 'ALERT' ? 'scopes.deadline.alert-date' : 'scopes.common.form-labels.due-date')" path="due">
+            <n-form-item :label="t(presentation.dateLabelKey)" path="due">
               <deadline-date-picker
                 v-model:value="formModel.due"
                 :time-zone="localizationStore.timeZone"

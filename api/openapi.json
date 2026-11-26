@@ -1,7 +1,7 @@
 {
   "components" : {
     "schemas" : {
-      "AddDeadlineAssigneeRequest" : {
+      "AddEventAssigneeRequest" : {
         "properties" : {
           "role" : {
             "enum" : [
@@ -286,7 +286,7 @@
         ],
         "type" : "object"
       },
-      "CreateDeadlineRequest" : {
+      "CreateEventRequest" : {
         "properties" : {
           "description" : {
             "maxLength" : 4096,
@@ -424,7 +424,7 @@
         ],
         "type" : "object"
       },
-      "DeadlineCreatedResponse" : {
+      "EventCreatedResponse" : {
         "properties" : {
           "assignees" : {
             "format" : "int32",
@@ -454,7 +454,7 @@
         ],
         "type" : "object"
       },
-      "DeadlinePermissions" : {
+      "EventPermissions" : {
         "properties" : {
           "delete" : {
             "type" : "boolean"
@@ -477,7 +477,7 @@
         ],
         "type" : "object"
       },
-      "DeadlineResponseWithRole" : {
+      "EventResponseWithRole" : {
         "properties" : {
           "createdAt" : {
             "format" : "date-time",
@@ -523,7 +523,7 @@
             "type" : "string"
           },
           "permissions" : {
-            "$ref" : "#/components/schemas/DeadlinePermissions"
+            "$ref" : "#/components/schemas/EventPermissions"
           },
           "role" : {
             "enum" : [
@@ -541,7 +541,7 @@
             ]
           },
           "stats" : {
-            "$ref" : "#/components/schemas/DeadlineStatsResponse"
+            "$ref" : "#/components/schemas/EventStatsResponse"
           },
           "threadId" : {
             "format" : "int64",
@@ -567,7 +567,7 @@
         ],
         "type" : "object"
       },
-      "DeadlineStatsResponse" : {
+      "EventStatsResponse" : {
         "properties" : {
           "assignees" : {
             "format" : "int64",
@@ -1132,11 +1132,11 @@
         "type" : "object"
       },
       "OtpSignInResponse" : { },
-      "PaginationResponseDeadlineResponseWithRole" : {
+      "PaginationResponseEventResponseWithRole" : {
         "properties" : {
           "data" : {
             "items" : {
-              "$ref" : "#/components/schemas/DeadlineResponseWithRole"
+              "$ref" : "#/components/schemas/EventResponseWithRole"
             },
             "type" : "array"
           },
@@ -1250,7 +1250,7 @@
           "requestId"
         ]
       },
-      "PatchDeadlineRequest" : {
+      "PatchEventRequest" : {
         "properties" : {
           "description" : {
             "maxLength" : 4096,
@@ -2547,7 +2547,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/PaginationResponseDeadlineResponseWithRole"
+                  "$ref" : "#/components/schemas/PaginationResponseEventResponseWithRole"
                 }
               }
             },
@@ -2634,7 +2634,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/DeadlineResponseWithRole"
+                  "$ref" : "#/components/schemas/EventResponseWithRole"
                 }
               }
             },
@@ -2679,7 +2679,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/PatchDeadlineRequest"
+                "$ref" : "#/components/schemas/PatchEventRequest"
               }
             }
           },
@@ -2798,7 +2798,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/AddDeadlineAssigneeRequest"
+                "$ref" : "#/components/schemas/AddEventAssigneeRequest"
               }
             }
           },
@@ -4706,7 +4706,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/PaginationResponseDeadlineResponseWithRole"
+                  "$ref" : "#/components/schemas/PaginationResponseEventResponseWithRole"
                 }
               }
             },
@@ -4751,7 +4751,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/CreateDeadlineRequest"
+                "$ref" : "#/components/schemas/CreateEventRequest"
               }
             }
           },
@@ -4762,7 +4762,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/DeadlineCreatedResponse"
+                  "$ref" : "#/components/schemas/EventCreatedResponse"
                 }
               }
             },

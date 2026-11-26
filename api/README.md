@@ -1,18 +1,5 @@
 # Deadlines API
 
-## Important dates (alerts)
-
-Create an alert through `POST /api/threads/{threadId}/deadlines` with `kind: "ALERT"`.
-Omitting `kind` creates a `DEADLINE`, preserving existing clients and records.
-The response includes `kind`; it cannot be changed after creation.
-
-Alerts share permissions, attachments, subscriptions, date editing and scheduled
-reminders with deadlines. They have no completion status and do not count toward
-thread completion progress. Marking an alert completed returns HTTP 400 with
-`deadline.alert-completion-not-allowed`. After its date, an alert remains available
-as a past event. Notification payloads include `deadline.kind`; bots should be
-updated before the API to render alerts with event wording.
-
 ## Notifications
 
 `NotificationService` queues deliveries in the database outbox. Deadline due-date

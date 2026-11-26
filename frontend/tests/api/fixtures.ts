@@ -1,6 +1,6 @@
 import type {
   AttachmentResponse,
-  DeadlineResponseWithRole,
+  EventResponseWithRole,
   OrganizationInvitationResponse,
   OrganizationResponse,
   ThreadResponseWithRole,
@@ -38,7 +38,7 @@ export function thread(fields: Partial<ThreadResponseWithRole> = {}): ThreadResp
   };
 }
 
-export function deadline(fields: Partial<DeadlineResponseWithRole> = {}): DeadlineResponseWithRole {
+export function deadline(fields: Partial<EventResponseWithRole> = {}): EventResponseWithRole {
   return {
     id: 3,
     title: "Deadline",

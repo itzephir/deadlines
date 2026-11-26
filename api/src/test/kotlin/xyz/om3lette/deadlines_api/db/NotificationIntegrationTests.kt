@@ -15,12 +15,12 @@ import org.springframework.transaction.support.TransactionTemplate
 import tools.jackson.databind.json.JsonMapper
 import xyz.om3lette.deadlines_api.config.TestInfraMocks
 import xyz.om3lette.deadlines_api.data.integration.bot.enums.Language
-import xyz.om3lette.deadlines_api.data.notifications.event.DeadlineDueChangedNotificationEvent
-import xyz.om3lette.deadlines_api.data.notifications.event.DeadlineNotificationEvent
+import xyz.om3lette.deadlines_api.data.notifications.event.EventDateChangedNotification
+import xyz.om3lette.deadlines_api.data.notifications.event.EventReminderNotification
 import xyz.om3lette.deadlines_api.data.notifications.event.NotificationEvent
 import xyz.om3lette.deadlines_api.data.outbox.repo.OutboxRepository
-import xyz.om3lette.deadlines_api.data.scopes.deadline.model.Deadline
-import xyz.om3lette.deadlines_api.data.scopes.deadline.model.DeadlineKind
+import xyz.om3lette.deadlines_api.data.scopes.event.model.Event
+import xyz.om3lette.deadlines_api.data.scopes.event.model.EventKind
 import xyz.om3lette.deadlines_api.data.scopes.thread.repo.ThreadRepository
 import xyz.om3lette.deadlines_api.data.scopes.userScope.enums.ScopeRole
 import xyz.om3lette.deadlines_api.data.scopes.userScope.enums.ScopeType
@@ -33,7 +33,7 @@ import xyz.om3lette.deadlines_api.db.DatabaseObjectBuilder.insertChat
 import xyz.om3lette.deadlines_api.db.DatabaseObjectBuilder.insertChatSubscription
 import xyz.om3lette.deadlines_api.db.DatabaseObjectBuilder.insertUser
 import xyz.om3lette.deadlines_api.db.DatabaseObjectBuilder.insertUserScope
-import xyz.om3lette.deadlines_api.services.DeadlineService
+import xyz.om3lette.deadlines_api.services.EventService
 import xyz.om3lette.deadlines_api.services.notifications.NotificationService
 import java.time.Instant
 import java.time.OffsetDateTime
@@ -50,7 +50,7 @@ class NotificationIntegrationTests {
     @Autowired private lateinit var em: EntityManager
     @Autowired private lateinit var notificationService: NotificationService
     @Autowired private lateinit var outboxRepository: OutboxRepository
-    @Autowired private lateinit var deadlineService: DeadlineService
+    @Autowired private lateinit var eventService: EventService
     @Autowired private lateinit var transactionManager: PlatformTransactionManager
     @Autowired private lateinit var threadRepository: ThreadRepository
 
@@ -136,10 +136,10 @@ class NotificationIntegrationTests {
         assertEquals(recipientChats.size * 2, events.size)
         events.forEach {
             val kind = when (it) {
-                is DeadlineNotificationEvent -> it.deadline.kind
-                is DeadlineDueChangedNotificationEvent -> it.deadline.kind
+                is EventReminderNotification -> it.event.kind
+                is EventDateChangedNotification -> it.event.kind
             }
-            assertEquals(DeadlineKind.ALERT, kind)
+            assertEquals(EventKind.ALERT, kind)
         }
     }
 
@@ -166,7 +166,7 @@ class NotificationIntegrationTests {
 
         notificationService.enqueueScheduledReminders(batchSize)
 
-        val events = payloads().map { it as DeadlineNotificationEvent }
+        val events = payloads().map { it as EventReminderNotification }
         assertEquals(recipientChats.map { it.messengerChatId }, events.map { it.chatId })
         assertEquals(multiScopeChat.language, events.first().language)
         assertEquals(multiScopeChat.timeZone, events.first().timeZone)
@@ -183,21 +183,21 @@ class NotificationIntegrationTests {
     @Transactional
     fun `due changes on active deadlines capture context and dates without a reminder id`() {
         fixtures()
-        val deadline = em.find(Deadline::class.java, deadlineId)
+        val deadline = em.find(Event::class.java, deadlineId)
         val oldDue = deadline.due
         val newDue = Instant.now().plus(3, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS)
 
-        deadlineService.patchDeadline(
+        eventService.patchEvent(
             em.find(User::class.java, ownerId), deadlineId, "Updated title", null, null, newDue
         )
 
-        val events = payloads().map { it as DeadlineDueChangedNotificationEvent }
+        val events = payloads().map { it as EventDateChangedNotification }
         assertEquals(recipientChats.map { it.messengerChatId }, events.map { it.chatId })
         events.forEach {
             assertEquals(oldDue, it.oldDue)
             assertEquals(newDue, it.newDue)
-            assertEquals(newDue, it.deadline.due)
-            assertEquals("Updated title", it.deadline.title)
+            assertEquals(newDue, it.event.due)
+            assertEquals("Updated title", it.event.title)
         }
         assertEquals(multiScopeChat.language, events.first().language)
         assertEquals(multiScopeChat.timeZone, events.first().timeZone)
@@ -209,7 +209,7 @@ class NotificationIntegrationTests {
         // Later edits must not change the already queued message snapshot.
         deadline.title = "Another title"
         em.flush()
-        assertEquals("Updated title", (payloads().first() as DeadlineDueChangedNotificationEvent).deadline.title)
+        assertEquals("Updated title", (payloads().first() as EventDateChangedNotification).event.title)
 
         val deliveries = outboxRepository.claimBatch(batchSize, maxRetries)
         assertEquals(recipientChats.size, deliveries.size)
@@ -261,7 +261,7 @@ class NotificationIntegrationTests {
         try {
             assertThrows<IllegalStateException> {
                 transactionTemplate.executeWithoutResult {
-                    deadlineService.patchDeadline(
+                    eventService.patchEvent(
                         em.find(User::class.java, ownerId), deadlineId, null, null, null,
                         Instant.now().plus(3, ChronoUnit.DAYS)
                     )

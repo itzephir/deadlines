@@ -503,7 +503,7 @@
       },
       "kind-description": {
         "DEADLINE": "A task with a due date.",
-        "ALERT": "An important date with reminders. No completion status needed."
+        "ALERT": "An important date with reminders."
       },
       "alert-date": "Event date"
     },

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { NTag } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
-import type { DeadlineState } from '@/types/state';
+import type { EventState } from '@/types/state';
 
 const { t } = useI18n();
-const tagType: Record<DeadlineState, "info" | "error" | "default"> = {
+const tagType: Record<EventState, "info" | "error" | "default"> = {
   open: "default",
   overdue: "error",
   completed: "info",
@@ -12,7 +12,7 @@ const tagType: Record<DeadlineState, "info" | "error" | "default"> = {
   occurred: "default",
 };
 defineProps<{
-  state: DeadlineState
+  state: EventState
 }>()
 </script>
 
