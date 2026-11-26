@@ -492,8 +492,8 @@
         "open": "Open",
         "overdue": "Overdue",
         "completed": "Completed",
-        "upcoming": "Alert · Upcoming",
-        "occurred": "Alert · Occurred"
+        "upcoming": "Upcoming",
+        "occurred": "Occurred"
       },
       "no-attachments": "No attachments yet",
       "entry-type": "Entry type",
